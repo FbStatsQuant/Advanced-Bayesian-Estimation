@@ -1,11 +1,14 @@
 library(splines)
 library(sparsehorseshoe)
 library(DiceKriging)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
 
 #Splines 
 
 n <- 2000
-b <- 0.7
+b <- 0.6
 set.seed(2024)
 J <- floor(n^b)
 x <- seq(0, 1, length.out = n)
@@ -39,20 +42,50 @@ Hs_model <- horseshoesp(
   method.sigma = "fixed", burn = 1000, nmc = 5000, thin = 1, alpha = 0.05
 )
 
-predictions <- B_test %*% Hs_model$BetaHat  
+predictions_lp <- B_test %*% Hs_model$BetaHat  
 
-mse_2_sp <- mean((test_data$y - as.numeric(predictions))^2)
-print(paste("Mean Squared Error (MSE):", mse_2_sp))
+mse_2_lp <- mean((test_data$y - as.numeric(predictions_lp))^2)
+print(paste("Mean Squared Error (MSE):", mse_2_lp))
 
 ##GPs
 
 gpr_model <- km(
   y ~ 1, design = train_data[, "x", drop = FALSE], response = train_data$y, 
-  covtype = "matern5_2", nugget = 1e-2
+  covtype = "matern5_2", nugget = 0.1
 )
 
-predictions <- predict(gpr_model, 
+predictions_gp <- predict(gpr_model, 
                        newdata = test_data[, "x", drop = FALSE], type = "SK")$mean
 
-mse_2_gp <- mean((test_data$y - predictions)^2)
+mse_2_gp <- mean((test_data$y - predictions_gp)^2)
 print(paste("Mean Squared Error (MSE):", mse_2_gp))
+
+# Add predictions to the test data
+test_data <- test_data %>%
+  mutate(
+    pred_spline = as.numeric(predictions_lp),
+    pred_gp = predictions_gp
+  )
+
+# Reshape data into long format for ggplot
+plot_data <- test_data %>%
+  select(x, y, pred_spline, pred_gp) %>%
+  pivot_longer(cols = c(y, pred_spline, pred_gp), 
+               names_to = "source", values_to = "value") %>%
+  mutate(source = recode(source, 
+                         "y" = "Original Data", 
+                         "pred_spline" = "Splines Estimate", 
+                         "pred_gp" = "GP Estimate"))
+
+# Create ggplot
+ggplot(plot_data, aes(x = x, y = value, color = source)) +
+  geom_point(data = filter(plot_data, source == "Original Data"), 
+             size = 0.5, alpha = 0.5) +  # Original data as points
+  geom_line(data = filter(plot_data, source != "Original Data"), 
+            size = 1) +  # Estimates as lines
+  labs(title = "Comparison of Original Data, LP and GP Estimates",
+       x = "x",
+       y = "y",
+       color = "Data Source") +
+  theme_minimal()
+
