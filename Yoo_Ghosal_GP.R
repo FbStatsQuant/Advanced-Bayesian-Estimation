@@ -5,7 +5,7 @@ library(DiceKriging)
 #Splines 
 
 n <- 2000
-b <- 0.6
+b <- 0.5
 set.seed(2024)
 J <- floor(n^b)
 
