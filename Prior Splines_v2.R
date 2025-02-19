@@ -5,11 +5,11 @@ library(MLmetrics)
 library(ggplot2)
 
 # Simulation parameters
-n <- 1000
+n <- 2000
 Sp_order <- 3
 x <- seq(0, 1, length.out = n)
-tau_values <- c(0.08, 0.1, 0.12)
-J_values <- seq(12, 60, by = 4)
+tau_values <- c(0.1, 0.2, 0.3)
+J_values <- seq(10, 100, by = 10)
 num_seeds <- 1
 
 # True function and noise parameters
