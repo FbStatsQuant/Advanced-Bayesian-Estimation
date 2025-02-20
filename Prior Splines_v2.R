@@ -8,8 +8,8 @@ library(ggplot2)
 n <- 2000
 Sp_order <- 3
 x <- seq(0, 1, length.out = n)
-tau_values <- c(0.1, 0.2, 0.3)
-J_values <- seq(10, 100, by = 10)
+tau_values <- c(0.1, 0.3, 0.5)
+J_values <- seq(10, 200, by = 20)
 num_seeds <- 1
 
 # True function and noise parameters
