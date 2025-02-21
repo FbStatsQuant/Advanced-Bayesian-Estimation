@@ -4,6 +4,8 @@ library(Hmisc)
 library(ggplot2)
 library(sparsehorseshoe)
 library(Matrix)
+library(tidyr)
+library(dplyr)
 
 set.seed(2024)
 n <- 1000
@@ -99,7 +101,7 @@ df <- data.frame(J_values, mse_values_3_1, mse_values_3_2, mse_values_3_3) %>%
   pivot_longer(cols = -J_values, names_to = "MSE_Type", values_to = "MSE")
 
 # Rename MSE_Type for better legend display
-df$MSE_Type <- factor(df$MSE_Type, labels = c("MSE 1_1", "MSE 1_2", "MSE 1_3"))
+df$MSE_Type <- factor(df$MSE_Type, labels = c("MSE 3_1", "MSE 3_2", "MSE 3_3"))
 
 # Plot using ggplot
 ggplot(df, aes(x = J_values, y = MSE, color = MSE_Type, shape = MSE_Type)) +

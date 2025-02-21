@@ -3,11 +3,13 @@ library(splines)
 library(MLmetrics)
 library(Hmisc)
 library(Matrix)
+library(tidyr)
+library(dplyr)
 
-n <- 2000
+n <- 1000
 b <- (1/3)
 set.seed(2024)
-J <- floor(1.5*n^b)
+J <- floor(2*n^b)
 J
 
 x <- seq(0, 1, length.out = n)
@@ -103,7 +105,7 @@ df <- data.frame(J_values, mse_values_2_1, mse_values_2_2, mse_values_2_3) %>%
   pivot_longer(cols = -J_values, names_to = "MSE_Type", values_to = "MSE")
 
 # Rename MSE_Type for better legend display
-df$MSE_Type <- factor(df$MSE_Type, labels = c("MSE 1_1", "MSE 1_2", "MSE 1_3"))
+df$MSE_Type <- factor(df$MSE_Type, labels = c("MSE 2_1", "MSE 2_2", "MSE 2_3"))
 
 # Plot using ggplot
 ggplot(df, aes(x = J_values, y = MSE, color = MSE_Type, shape = MSE_Type)) +
