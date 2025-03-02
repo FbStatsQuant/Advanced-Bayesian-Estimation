@@ -5,11 +5,11 @@ library(MLmetrics)
 library(ggplot2)
 
 # Simulation parameters
-n <- 2000
+n <- 1000
 Sp_order <- 3
 x <- seq(0, 1, length.out = n)
-tau_values <- c(0.1, 0.3, 0.5)
-J_values <- seq(10, 200, by = 20)
+tau_values <- c(0.2, 0.5, 1.0)
+J_values <- seq(200, 1200, by = 200)
 num_seeds <- 1
 
 # True function and noise parameters
@@ -21,7 +21,7 @@ for (j in 1:n) {
   z[j] <- s(1000, j / n)
 }
 
-sd <- 0.3
+sd <- 0.2
 sigma_sq <- sd^2
 
 # Precompute basis matrices for all J values
@@ -82,7 +82,7 @@ ggplot(plot_data, aes(x = J, y = Avg_MSE, color = Tau)) +
 
 num_Hs_seeds <- 1
 Hs_seeds <- sample(0:2000, num_Hs_seeds)  # Generate 10 different seeds
-
+Hs_seeds <- 2024
 # Initialize storage for Horseshoe results
 Hs_MSE_matrix <- matrix(0, nrow = num_Hs_seeds, ncol = length(J_values))
 
@@ -99,9 +99,9 @@ for (s in 1:num_Hs_seeds) {
     B <- splineDesign(knots, x, ord = Sp_order, outer.ok = TRUE, sparse = TRUE)
     
     # Run Horseshoe prior regression
-    Hs1 <- horseshoesp(y, B, method.tau = "halfCauchy", 
-                       Sigma2 = sigma_sq, tau = 1,
-                       method.sigma = "fixed", burn = 1000, nmc = 5000, thin = 1, alpha = 0.05)
+    Hs1 <- horseshoesp(y, B, method.tau = c("truncatedCauchy"), Sigma2 = (sd)^2, tau=1, s=0.5,
+                       method.sigma = c("fixed"), burn = 1000, nmc = 5000, thin = 1)
+    
     
     # Extract estimated coefficients
     beta_hat1 <- as.vector(unlist(Hs1[1])) 
@@ -136,3 +136,8 @@ ggplot(plot_data, aes(x = J, y = Avg_MSE, color = Tau)) +
   scale_color_manual(values = c("#E69F00", "#56B4E9", "#009E73", "black")) +  # Black for HS prior
   theme(legend.position = "bottom",
         plot.title = element_text(hjust = 0.5))
+
+
+tauout <- Hs1$tauSamples
+hist(tauout)
+

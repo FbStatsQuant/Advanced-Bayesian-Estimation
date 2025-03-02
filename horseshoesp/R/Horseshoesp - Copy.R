@@ -27,6 +27,7 @@ horseshoesp = function(y,X, method.tau = c("fixed", "truncatedCauchy","halfCauch
 
   ## output ##
   betaout=matrix(0,p,effsamp)
+  lambdaout=matrix(0,p,effsamp)
   tauout=rep(0,effsamp)
   sigmaSqout=rep(0,effsamp)
 
@@ -138,6 +139,7 @@ horseshoesp = function(y,X, method.tau = c("fixed", "truncatedCauchy","halfCauch
     if(i > burn && i%%thin== 0)
     {
       betaout[,(i-burn)/thin] = Beta
+      lambdaout[,(i-burn)/thin] = lambda
       tauout[(i-burn)/thin]=tau
       sigmaSqout[(i-burn)/thin]=sigma_sq
     }
@@ -145,11 +147,12 @@ horseshoesp = function(y,X, method.tau = c("fixed", "truncatedCauchy","halfCauch
 
   pMean=apply(betaout,1,mean)
   pMedian=apply(betaout,1,stats::median)
+  pLambda=apply(lambdaout,1,mean)
   pSigma=mean(sigmaSqout)
   pTau=mean(tauout)
 
   result=list("BetaHat"=pMean, "BetaMedian"=pMedian,
-              "Sigma2Hat"=pSigma,"TauHat"=pTau)
+              "Sigma2Hat"=pSigma,"TauHat"=pTau, "LambdaHat"=pLambda)
   return(result)
 
 }

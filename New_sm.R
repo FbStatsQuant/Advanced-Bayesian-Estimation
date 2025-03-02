@@ -3,11 +3,7 @@ library(splines)
 library(MLmetrics)
 library(Hmisc)
 library(Matrix)
-library(tidyr)
-library(dplyr)
 library(glmnet)
-library(horseshoe)
-
 
 num_seeds <- 1
 random_seeds <- sample(0:2000, num_seeds)
@@ -15,14 +11,9 @@ random_seeds <- sample(0:2000, num_seeds)
 
 n <- 1000
 x <- seq(0, 1, length.out = n)
-s <- function(m, x) {
-  sqrt(2) * sum(seq(m)^(-1.5) * sin(seq(m)) * cos(((seq(m)) - 0.5) * pi * x))
-}
-z <- vector()
-for (j in 1:n) {
-  z[j] <- s(1000, j / n)
-}
-sd <- 0.4
+f <- function(x) exp(-2 * x^2)
+z <- f(x)
+sd <- 0.3
 sigma_sq <- sd^2
 y <- z + rnorm(n, mean = 0, sd = sd)
 mean(z^2)/mean((z-y)^2)
@@ -66,7 +57,7 @@ fourier_basis <- function(x, K) {
 B <- fourier_basis(x, floor(J/2)-1)
 
 Hs1 <- horseshoe(y, B, method.tau = c("halfCauchy"), Sigma2 = (sd)^2, tau=1,
-                 method.sigma = c("fixed"), burn = 1000, nmc = 5000, thin = 1)
+                   method.sigma = c("fixed"), burn = 1000, nmc = 5000, thin = 1)
 beta_hat1 <- as.vector(unlist(Hs1[1]))
 
 
@@ -98,8 +89,7 @@ MSE(z,as.numeric(B%*%beta_hat1))
 MSE(z, as.numeric(B%*%theta))
 
 
-
-J_values <- c(seq(10,150, by = 10))
+J_values <- c(seq(8,100, by = 4))
 k_values <- rep(0,length(J_values))
 mse_values_2_1 <- numeric(length(J_values))
 mse_values_2_2 <- numeric(length(J_values))

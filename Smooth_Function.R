@@ -1,22 +1,28 @@
+library(ggplot2)
 library(splines)
 library(MLmetrics)
 library(Hmisc)
-library(ggplot2)
-library(sparsehorseshoe)
 library(Matrix)
 library(tidyr)
 library(dplyr)
 
-set.seed(2024)
 n <- 1000
-b <- 0.5
-J <-floor(n^b)
-x <- seq(0,1,length.out = n)
-f <- function(x){
-  exp(-x^2)}
+b <- (1/3)
+set.seed(2024)
+J <- floor(2*n^b)
+
+
+x <- seq(0, 1, length.out = n)
+f <- function(x) exp(-2 * x^2)
 z <- f(x)
-sd <- 0.3
-y <- z+rnorm(n,mean=0, sd=sd)
+sd <- 0.15
+sigma_sq <- sd^2
+(SNR <- var(z)/sd^2)
+y <- z + rnorm(n, mean = 0, sd = sd)
+
+lambda <- c(0.1, 1, 10)
+
+(sigma_theta <- sd / sqrt(lambda)) 
 
 data <- data.frame(x = x, y = y, z = z)
 
@@ -32,18 +38,113 @@ ggplot(data, aes(x = x)) +
   scale_color_manual(values = c("lightblue", "black")) +
   theme_minimal()
 
-t <- c(-0.002, -0.001, seq(0,1, length.out = J),1.001, 1.002)
+
+
+
+t <- c(-0.0002, -0.0001, seq(0,1, length.out = J),1.0001, 1.0002)
 Sp_order <- 3
 B <- splineDesign(t, x, ord = Sp_order, outer.ok = TRUE,
                   sparse = TRUE)
 
-Hs1 <- horseshoesp(y, B, method.tau = c("halfCauchy"), Sigma2 = (sd)^2, tau=1,
-                   method.sigma = c("fixed"), burn = 1000, nmc = 5000, thin = 1, alpha = 0.05)
+Hs1 <- horseshoesp(y, B, method.tau = c("halfCauchy"), Sigma2 = (sd)^2, tau=1, s=2,
+                   method.sigma = c("fixed"), burn = 1000, nmc = 5000, thin = 1)
 beta_hat1 <- as.vector(unlist(Hs1[1]))
+
+
+# Create a data frame
+plot_data <- data.frame(
+  x = x,
+  True_Function = z,
+  Estimated = as.numeric(B%*%beta_hat1)
+)
+
+# Plot
+ggplot(plot_data, aes(x = x)) +
+  geom_line(aes(y = True_Function), color = "red", linewidth = 0.8) +  # True function (line)
+  geom_point(aes(y = Estimated), color = "blue", size = 0.5, alpha = 0.5) +  # Estimates (points)
+  labs(
+    title = "True Function vs. Posterior Estimates",
+    x = "x",
+    y = "Value"
+  ) +
+  theme_minimal()
 
 MSE(z,as.numeric(B%*%beta_hat1))
 
-df_estimation <- data.frame(x=x, estimated_y=as.numeric(B%*%beta_hat1), actual_y=f(x))
+
+
+
+num_seeds <- 1
+random_seeds <- sample(0:2000, num_seeds)
+J_values <- seq(10, 100, by = 10)
+
+B_list <- lapply(J_values, function(j) {
+  knots <- c(-0.0002, -0.0001, seq(0, 1, length.out = j - 4), 1.0001, 1.0002)
+  splineDesign(knots, x, ord = Sp_order, outer.ok = TRUE, sparse = FALSE)
+})
+
+results <- list()
+
+
+for (tau in sigma_theta) {
+  tau_sq <- tau  # Using τ directly for clarity
+  MSE_matrix <- matrix(0, nrow = num_seeds, ncol = length(J_values))
+  
+  for (i in 1:num_seeds) {
+    set.seed(random_seeds[i])
+    y <- z + rnorm(n, 0, sd)
+    
+    for (j in seq_along(J_values)) {
+      B <- B_list[[j]]
+      p <- ncol(B)
+      
+      # Bayesian linear regression computation
+      precision_matrix <- (1/tau_sq) * diag(p) + (1/sigma_sq) * crossprod(B)
+      theta <- solve(precision_matrix, (1/sigma_sq) * crossprod(B, y))
+      
+      MSE_matrix[i, j] <- MSE(z, B %*% theta)
+    }
+  }
+  results[[paste0("tau_", tau)]] <- data.frame(
+    J = J_values,
+    Avg_MSE = colMeans(MSE_matrix),
+    Tau = factor(paste("τ =", tau), 
+                 levels = paste("τ =", sigma_theta))
+  )
+}
+
+plot_data <- do.call(rbind, results)
+
+# Create visualization
+ggplot(plot_data, aes(x = J, y = Avg_MSE, color = Tau)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  labs(title = "Average MSE vs Number of Knots for Different Prior Variances",
+       x = "Number of Knots (J)",
+       y = "Average MSE",
+       color = "Prior Variance (τ)") +
+  theme_minimal() +
+  scale_color_manual(values = c("#E69F00", "#56B4E9", "#009E73")) +
+  theme(legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5))
+
+
+sigma_theta <- sigma_theta[1]
+
+
+t <- c(-0.0002, -0.0001, seq(0,1, length.out = J),1.0001, 1.0002)
+Sp_order <- 3
+B <- splineDesign(t, x, ord = Sp_order, outer.ok = TRUE,
+                  sparse = TRUE)
+
+Hs1 <- horseshoesp(y, B, method.tau = c("truncatedCauchy"), Sigma2 = (sd)^2, tau=0.5, s=0.5,
+                   method.sigma = c("fixed"), burn = 1000, nmc = 5000, thin = 1)
+beta_hat1 <- as.vector(unlist(Hs1[1]))
+
+
+
+
+df_estimation <- data.frame(x=x, estimated_y=as.numeric(B%*%beta_hat1), actual_y=z)
 
 ggplot(df_estimation, aes(x=x))+
   geom_point(aes(y = estimated_y, color = "Estimation"), size = 0.8) +
@@ -53,9 +154,19 @@ ggplot(df_estimation, aes(x=x))+
   theme_minimal() +
   theme(plot.title = element_text(size = 14, face = "bold"))
 
+precision_matrix <- (1/(sigma_theta)^2) * diag(ncol(B)) + (1/sigma_sq) * crossprod(B)
+theta <- solve(precision_matrix, (1/sigma_sq) * crossprod(B, y))
 
 
-J_values <- c(seq(200,2000, by =200))
+Hs1$TauHat
+MSE(z,as.numeric(B%*%beta_hat1))
+MSE(z, as.numeric(B%*%theta))
+
+
+
+
+
+J_values <- c(seq(200,1000, by =200))
 mse_values_3_1 <- numeric(length(J_values))
 mse_values_3_2 <- numeric(length(J_values))
 mse_values_3_3 <- numeric(length(J_values))

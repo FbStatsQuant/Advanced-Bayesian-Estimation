@@ -15,14 +15,18 @@ random_seeds <- sample(0:2000, num_seeds)
 
 n <- 1000
 x <- seq(0, 1, length.out = n)
-s <- function(m, x) {
-  sqrt(2) * sum(seq(m)^(-1.5) * sin(seq(m)) * cos(((seq(m)) - 0.5) * pi * x))
+a1 <- 0.8
+a2 <- 8
+a1*a2 > 1 + 1.5*pi
+alpha <- -log(a1)/log(a2)
+s <- function(m,x) {
+  sum(a1^(seq(m))*cos(a2^seq(10)*pi*x))
 }
 z <- vector()
 for (j in 1:n) {
   z[j] <- s(1000, j / n)
 }
-sd <- 0.4
+sd <- 0.5
 sigma_sq <- sd^2
 y <- z + rnorm(n, mean = 0, sd = sd)
 mean(z^2)/mean((z-y)^2)
@@ -36,8 +40,8 @@ ggplot(data, aes(x = x)) +
   labs(x = "x", y = "y")
 
 ggplot(data, aes(x = x)) +
-  geom_point(aes(y = y), color = "lightblue") +
-  geom_line(aes(y = z), color = "black") +
+  geom_point(aes(y = y), color = "black", size = 0.5, alpha = 0.5) +
+  geom_line(aes(y = z), color = "lightblue", linewidth = 0.5) +
   labs(title = "Function vs Random Points", x = "x", y = "y") +
   theme(plot.title = element_text(size = 16)) +
   scale_color_manual(values = c("lightblue", "black")) +
@@ -79,8 +83,8 @@ plot_data <- data.frame(
 
 # Plot
 ggplot(plot_data, aes(x = x)) +
-  geom_line(aes(y = True_Function), color = "red", linewidth = 0.8) +  # True function (line)
-  geom_point(aes(y = Estimated), color = "blue", size = 0.5, alpha = 0.5) +  # Estimates (points)
+  geom_line(aes(y = True_Function), color = "lightblue", linewidth = 0.5) +  # True function (line)
+  geom_point(aes(y = Estimated), color = "black", size = 0.5, alpha = 0.5) +  # Estimates (points)
   labs(
     title = "True Function vs. Posterior Estimates",
     x = "x",
@@ -99,7 +103,7 @@ MSE(z, as.numeric(B%*%theta))
 
 
 
-J_values <- c(seq(10,150, by = 10))
+J_values <- c(seq(10,310, by = 50))
 k_values <- rep(0,length(J_values))
 mse_values_2_1 <- numeric(length(J_values))
 mse_values_2_2 <- numeric(length(J_values))
@@ -143,5 +147,4 @@ ggplot(results, aes(x = J_values)) +
     y = "MSE"
   ) +
   theme_minimal()
-
 
