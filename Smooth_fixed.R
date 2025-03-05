@@ -5,7 +5,7 @@ library(glmnet)
 
 set.seed(1991)
 
-J <- 10
+J <- 50
 n <- 1000
 x <- seq(0,1, length.out = n)
 
@@ -148,30 +148,17 @@ ggplot(data, aes(x = x)) +
 # Legendre
 
 
-
 x_scaled <- 2 * x - 1
-
-generate_legendre_basis <- function(x, J) {
-  X <- matrix(0, nrow = length(x), ncol = J)
-  
-  X[, 1] <- 1                     # P0(x) = 1
-  if(J >= 2) X[, 2] <- x          # P1(x) = x
-  
-  for (k in 3:J) {
-    n <- k - 2  
-    # P_{n}(x) = [(2n-1)x P_{n-1}(x) - (n-1) P_{n-2}(x)] / n
-    X[, k] <- ((2*n - 1) * x * X[, k-1] - (n - 1) * X[, k-2]) / n
-  }
-  
-  return(X)
+B_l <- matrix(0, nrow = length(x), ncol = J+1)
+B_l[, 1] <- 1
+if(J >= 2) B_l[, 2] <- x_scaled
+for (k in 3:(J+1)) {
+  m <- k - 2  
+  B_l[, k] <- ((2*m - 1) * x_scaled * B_l[, k-1] - (m - 1) * B_l[, k-2]) / m
 }
-
-B_l <- generate_legendre_basis(x_scaled, J+1)
-
 ## Horseshoe
 
-Hs_l <- horseshoe(y, B_l, method.tau = c("halfCauchy"), method.sigma = c("fixed"),
-                  Sigma2 = sd^2)
+Hs_l <- horseshoe(y, B_l, method.tau = c("halfCauchy"), method.sigma = c("fixed"), Sigma2 = sd^2)
 theta_l_hs <- unlist(Hs_f$BetaHat)
 f_hat_l_hs <- B_f%*%theta_l_hs
 

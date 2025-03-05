@@ -5,7 +5,7 @@ library(glmnet)
 library(writexl)
 
 
-set.seed(1991)
+set.seed(24353)
 n <- 1000
 x <- seq(0,1, length.out = n)
 sd <- 0.2
@@ -69,23 +69,6 @@ for (J in J_values) {
   
   mse_results[mse_results$J == J, ] <- c(J, mean((z - f_hat_s_hs)^2), mean((z - f_hat_s_n)^2), mean((z - f_hat_f_hs)^2), mean((z - f_hat_f_n)^2), mean((z - f_hat_l_hs)^2), mean((z - f_hat_l_n)^2))
 }
-
-ggplot(mse_results_long, aes(x = J, y = value, color = variable)) +
-  geom_point(size = 2) +
-  labs(
-    title = "MSE vs J",
-    x = "J",
-    y = "MSE"
-  ) +
-  scale_color_manual(values = c(
-    "mse_s_hs" = "lightblue", 
-    "mse_s_ridge" = "blue", 
-    "mse_f_hs" = "lightgreen", 
-    "mse_f_ridge" = "green", 
-    "mse_l_hs" = "orange", 
-    "mse_l_ridge" = "red"
-  )) +
-  theme_minimal()
 
 
 write_xlsx(mse_results, "MSE_smooth.xlsx")

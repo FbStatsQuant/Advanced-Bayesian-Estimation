@@ -5,7 +5,7 @@ library(glmnet)
 
 set.seed(1991)
 
-J <- 500
+J <- 700
 n <- 1000
 x <- seq(0,1, length.out = n)
 
