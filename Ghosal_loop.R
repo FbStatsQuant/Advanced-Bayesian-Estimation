@@ -5,7 +5,7 @@ library(glmnet)
 library(writexl)
 
 
-set.seed(1991)
+set.seed(1952355)
 n <- 1000
 x <- seq(0,1, length.out = n)
 sd <- 0.3
@@ -74,5 +74,5 @@ for (J in J_values) {
   mse_results[mse_results$J == J, ] <- c(J, mean((z - f_hat_s_hs)^2), mean((z - f_hat_s_n)^2), mean((z - f_hat_f_hs)^2), mean((z - f_hat_f_n)^2), mean((z - f_hat_l_hs)^2), mean((z - f_hat_l_n)^2))
 }
 
-write_xlsx(mse_results, "MSE_ghosal.xlsx")
+write_xlsx(mse_results, "MSE_ghosal_2.xlsx")
 

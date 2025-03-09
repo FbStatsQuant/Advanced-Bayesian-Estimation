@@ -42,7 +42,7 @@ Sp_order <- 3
 B_s <- splineDesign(t, x, ord = Sp_order, outer.ok = TRUE,
                     sparse = FALSE)
 
-Hs_s <- horseshoe(y, B_s, method.tau = c("halfCauchy"), method.sigma = c("fixed"),
+Hs_s <- horseshoe(y, B_s, method.tau = c("halfCauchy"), method.sigma = c("fixed"), tau = 0.2,
                   Sigma2 = sd^2)
 
 theta_s_hs <- unlist(Hs_s$BetaHat)
@@ -156,11 +156,12 @@ for (k in 3:(J+1)) {
   m <- k - 2  
   B_l[, k] <- ((2*m - 1) * x_scaled * B_l[, k-1] - (m - 1) * B_l[, k-2]) / m
 }
+
 ## Horseshoe
 
 Hs_l <- horseshoe(y, B_l, method.tau = c("halfCauchy"), method.sigma = c("fixed"), Sigma2 = sd^2)
-theta_l_hs <- unlist(Hs_f$BetaHat)
-f_hat_l_hs <- B_f%*%theta_l_hs
+theta_l_hs <- unlist(Hs_l$BetaHat)
+f_hat_l_hs <- B_l%*%theta_l_hs
 
 ## Ridge
 

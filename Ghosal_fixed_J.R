@@ -5,7 +5,7 @@ library(glmnet)
 
 set.seed(1991)
 
-J <- 30
+J <- 
 n <- 1000
 x <- seq(0,1, length.out = n)
 
@@ -175,8 +175,8 @@ B_l <- generate_legendre_basis(x_scaled, J+1)
 
 Hs_l <- horseshoe(y, B_l, method.tau = c("halfCauchy"), method.sigma = c("fixed"),
                   Sigma2 = sd^2)
-theta_l_hs <- unlist(Hs_f$BetaHat)
-f_hat_l_hs <- B_f%*%theta_l_hs
+theta_l_hs <- unlist(Hs_l$BetaHat)
+f_hat_l_hs <- B_l%*%theta_l_hs
 
 ## Ridge
 
@@ -211,6 +211,34 @@ ggplot(data, aes(x = x)) +
     legend.title = element_blank(),
     plot.caption = element_text(hjust = 0.5, vjust = 2, size = 10, face = "italic")  # Centered caption below the plot
   )
+
+
+subset_indices <- seq(1, n, by = 2)
+data <- data.frame(x = x[floor(n*0.05):floor(n*0.95)], true = z[floor(n*0.05):floor(n*0.95)], 
+                   hs_s = f_hat_s_hs[floor(n*0.05):floor(n*0.95)], hs_f = f_hat_f_hs[floor(n*0.05):floor(n*0.95)], 
+                   hs_l = f_hat_l_hs[floor(n*0.05):floor(n*0.95)])
+
+ggplot(data, aes(x = x)) +
+  geom_point(aes(y = hs_s, color = "Horseshoe Splines"), size = 1, alpha = 1) +  
+  geom_point(aes(y = hs_l, color = "Horseshoe Fourier"), size = 1, alpha = 1) +
+  geom_line(aes(y = true, color = "True Function"), linewidth = 0.8) +        
+  labs(
+    title = "True Function, Horseshoe, n = 5000 and J = 100",
+    x = "x",
+    y = "Value"
+  ) +
+  scale_color_manual(values = c("True Function" = "black", 
+                                "Horseshoe Splines" = "blue", 
+                                "Horseshoe Fourier" = "red")) +
+  theme_minimal() +
+  theme(
+    legend.position = c(0.95, 0.95),
+    legend.justification = c(1, 1),
+    legend.background = element_rect(fill = alpha("white", 0.7)),
+    legend.title = element_blank(),
+    plot.caption = element_text(hjust = 0.5, vjust = 2, size = 10, face = "italic")  # Centered caption below the plot
+  )
+
 
 
 # MSE
