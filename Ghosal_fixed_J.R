@@ -5,7 +5,7 @@ library(glmnet)
 
 set.seed(1991)
 
-J <- 
+J <- 100
 n <- 1000
 x <- seq(0,1, length.out = n)
 
@@ -85,6 +85,33 @@ ggplot(data, aes(x = x)) +
     plot.caption = element_text(hjust = 0.5, vjust = 2, size = 10, face = "italic")  # Centered caption below the plot
   )
 
+
+
+
+
+
+## Plot
+
+subset_indices <- seq(1, n, by = 2)
+data <- data.frame(x = x, true = z, hs = f_hat_s_hs, ridge = f_hat_s_n)[subset_indices, ]
+
+ggplot(data, aes(x = x)) +
+  geom_point(aes(y = hs, color = "Horseshoe Prior"), size = 1, alpha = 1) +  
+  geom_line(aes(y = true, color = "True Function"), linewidth = 0.8) +        
+  labs(
+    x = "x",
+    y = "Value"
+  ) +
+  scale_color_manual(values = c("True Function" = "black", 
+                                "Horseshoe Prior" = "lightblue")) +
+  theme_minimal() +
+  theme(
+    legend.position = c(0.95, 0.95),
+    legend.justification = c(1, 1),
+    legend.background = element_rect(fill = alpha("white", 0.7)),
+    legend.title = element_blank(),
+    plot.caption = element_text(hjust = 0.5, vjust = 2, size = 10, face = "italic")  # Centered caption below the plot
+  )
 
 
 # Fourier

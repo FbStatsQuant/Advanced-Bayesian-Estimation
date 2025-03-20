@@ -3,7 +3,7 @@ library(ggplot2)
 library(splines)
 library(glmnet)
 
-n_values <- seq(1000, 20000, by = 500)
+n_values <- seq(1000, 20000, by = 1000)
 MSE <- rep(0, length(n_values))
 MSE_r <- rep(0, length(n_values))
 b <- 0.7
@@ -33,21 +33,31 @@ for (i in seq_along(n_values)) {
 
 print(MSE)
 
+library(ggplot2)
+
+# Create data frame
 my_data <- data.frame(
   log_n = log(n_values),
   log_MSE = log(MSE)
 )
 
+# Fit linear model
+fit_hs_bs <- lm(log_MSE ~ log_n, data = my_data)
+summary_fit <- summary(fit_hs_bs)
 
-fit <- lm(log_MSE ~ log_n, data = my_data)
-summary(fit)
+# Extract slope
+slope <- round(coef(fit_hs_bs)[2], 3)
 
+# Create plot
 ggplot(my_data, aes(x = log_n, y = log_MSE)) +
   geom_point(color = "blue") +
   geom_smooth(method = "lm", se = FALSE, color = "red") +
-  labs(title = "Regression of log(MSE) on log(n)",
+  labs(title = "Regression of log(MSE) on log(n): B-splines / Horseshoe",
        x = "log(n)", y = "log(MSE)") +
+  annotate("text", x = min(my_data$log_n) + 0.1, y = min(my_data$log_MSE) + 0.1,
+           label = paste("Slope =", slope), hjust = 0, size = 5, color = "black") +
   theme_minimal()
+
 
 
 
@@ -73,7 +83,7 @@ for (i in seq_along(n_values)) {
   B_f <- fourier_basis(x, floor(J/2))
   y <- z + rnorm(n, mean = 0, sd = sd)
   lambda_s <- cv.glmnet(B_f,z, alpha=0, nfolds = 10)$lambda.min
-  #lambda_s <- 0.05
+  lambda_s <- 0.5
   precision_matrix <- (lambda_s/((sd^2)) * diag(ncol(B_f)) + (1/(sd^2)) * crossprod(B_f))
   theta_n <- solve(precision_matrix, (1/(sd^2)) * crossprod(B_f, y))
   f_hat_n <- B_f%*%theta_n
@@ -99,6 +109,17 @@ ggplot(my_data, aes(x = log_n, y = log_MSE)) +
   theme_minimal()
 
 
+
+
+
+my_data <- data.frame(
+  log_n = log(n_values), # New predictor log(log(n))
+  log_MSE = log(MSE)
+)
+
+# Fit multiple regression model
+fit_hs_bs <- lm(log_MSE ~ log_n, data = my_data)
+summary(fit_hs_bs)
 
 
 
