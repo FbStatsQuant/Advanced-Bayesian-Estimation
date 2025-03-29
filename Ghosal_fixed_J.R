@@ -5,8 +5,10 @@ library(glmnet)
 
 set.seed(1991)
 
-J <- 100
-n <- 1000
+n <- 2000
+b <- 0.6
+J <- floor(n^b)
+tau <- n^(-b-0.5)
 x <- seq(0,1, length.out = n)
 
 s <- function(m, x) {
@@ -45,7 +47,7 @@ Sp_order <- 3
 B_s <- splineDesign(t, x, ord = Sp_order, outer.ok = TRUE,
                   sparse = FALSE)
 
-Hs_s <- horseshoe(y, B_s, method.tau = c("halfCauchy"), method.sigma = c("fixed"),
+Hs_s <- horseshoe(y, B_s, method.tau = c("fixed"), method.sigma = c("fixed"), tau = tau,
                   Sigma2 = sd^2)
 
 theta_s_hs <- unlist(Hs_s$BetaHat)
@@ -134,7 +136,7 @@ B_f <- fourier_basis(x, floor(J/2))
 
 ## Hs
 
-Hs_f <- horseshoe(y, B_f, method.tau = c("halfCauchy"), method.sigma = c("fixed"),
+Hs_f <- horseshoe(y, B_f, method.tau = c("fixed"), method.sigma = c("fixed"), tau = tau,
                   Sigma2 = sd^2)
 theta_f_hs <- unlist(Hs_f$BetaHat)
 f_hat_f_hs <- B_f%*%theta_f_hs
@@ -200,7 +202,7 @@ B_l <- generate_legendre_basis(x_scaled, J+1)
 
 ## Horseshoe
 
-Hs_l <- horseshoe(y, B_l, method.tau = c("halfCauchy"), method.sigma = c("fixed"),
+Hs_l <- horseshoe(y, B_l, method.tau = c("fixed"), method.sigma = c("fixed"), tau=tau,
                   Sigma2 = sd^2)
 theta_l_hs <- unlist(Hs_l$BetaHat)
 f_hat_l_hs <- B_l%*%theta_l_hs

@@ -2,8 +2,10 @@ library(horseshoe)
 library(ggplot2)
 library(splines)
 library(glmnet)
+library(writexl)
+library(readxl)
 
-n_values <- seq(1000, 10000, by = 1000)
+n_values <- seq(1000, 20000, by = 1000)
 MSE_hs_b <- rep(0, length(n_values))
 MSE_hs_f <- rep(0, length(n_values))
 MSE_hs_l <- rep(0, length(n_values))
@@ -13,14 +15,12 @@ MSE_no_l <- rep(0, length(n_values))
 b <- 0.7
 sd <- 0.3
 
-
 s <- function(m, x) {
   sqrt(2) * sum(seq(m)^(-1.5) * sin(seq(m)) * cos(((seq(m)) - 0.5) * pi * x))
 }
 
 
 #Hs Splines
-
 
 
 for (i in seq_along(n_values)) {
@@ -311,4 +311,76 @@ ggplot(my_data_no_l, aes(x = log_n, y = log_MSE)) +
   annotate("text", x = min(my_data_no_l$log_n)  +2, y = min(my_data_no_l$log_MSE) + 0.5,
            label = paste("Slope =", slope), hjust = 0, size = 5, color = "black") +
   theme_minimal()
+
+
+
+df_mse <- data.frame(
+  n = n_values,
+  MSE_hs_bspline = MSE_hs_b,
+  MSE_hs_fourier = MSE_hs_f,
+  MSE_hs_legendre = MSE_hs_l,
+  MSE_lasso_bspline = MSE_no_b,
+  MSE_lasso_fourier = MSE_no_f,
+  MSE_lasso_legendre = MSE_no_l
+)
+
+write_xlsx(df_mse, path = "MSE_results.xlsx")
+
+
+df_mse <- read_xlsx("MSE_results.xlsx")
+df_mse$log_n <- log(df_mse$n)
+
+
+df_mse$log_MSE_hs_bspline     <- log(df_mse$MSE_hs_bspline)
+df_mse$log_MSE_hs_fourier     <- log(df_mse$MSE_hs_fourier)
+df_mse$log_MSE_hs_legendre    <- log(df_mse$MSE_hs_legendre)
+df_mse$log_MSE_lasso_bspline  <- log(df_mse$MSE_lasso_bspline)
+df_mse$log_MSE_lasso_fourier  <- log(df_mse$MSE_lasso_fourier)
+df_mse$log_MSE_lasso_legendre <- log(df_mse$MSE_lasso_legendre)
+df_mse$log_log_n <- log(df_mse$log_n)
+
+cat("\n--- Regressions: log(MSE) ~ log(n) ---\n")
+summary(lm(log_MSE_hs_bspline     ~ log_n, data = df_mse))
+summary(lm(log_MSE_hs_fourier     ~ log_n, data = df_mse))
+summary(lm(log_MSE_hs_legendre    ~ log_n, data = df_mse))
+summary(lm(log_MSE_lasso_bspline  ~ log_n, data = df_mse))
+summary(lm(log_MSE_lasso_fourier  ~ log_n, data = df_mse))
+summary(lm(log_MSE_lasso_legendre ~ log_n, data = df_mse))
+
+cat("\n--- Regressions: log(MSE) ~ log(n) + log(log(n)) ---\n")
+summary(lm(log_MSE_hs_bspline     ~ log_n + log_log_n, data = df_mse))
+summary(lm(log_MSE_hs_fourier     ~ log_n + log_log_n, data = df_mse))
+summary(lm(log_MSE_hs_legendre    ~ log_n + log_log_n, data = df_mse))
+summary(lm(log_MSE_lasso_bspline  ~ log_n + log_log_n, data = df_mse))
+summary(lm(log_MSE_lasso_fourier  ~ log_n + log_log_n, data = df_mse))
+summary(lm(log_MSE_lasso_legendre ~ log_n + log_log_n, data = df_mse))
+
+
+## Last 10
+
+df_last10 <- tail(df_mse, 10)
+
+df_last10$log_MSE_hs_bspline     <- log(df_last10$MSE_hs_bspline)
+df_last10$log_MSE_hs_fourier     <- log(df_last10$MSE_hs_fourier)
+df_last10$log_MSE_hs_legendre    <- log(df_last10$MSE_hs_legendre)
+df_last10$log_MSE_lasso_bspline  <- log(df_last10$MSE_lasso_bspline)
+df_last10$log_MSE_lasso_fourier  <- log(df_last10$MSE_lasso_fourier)
+df_last10$log_MSE_lasso_legendre <- log(df_last10$MSE_lasso_legendre)
+df_last10$log_log_n <- log(df_last10$log_n)
+
+cat("\n--- Regressions (Last 10): log(MSE) ~ log(n) ---\n")
+summary(lm(log_MSE_hs_bspline     ~ log_n, data = df_last10))
+summary(lm(log_MSE_hs_fourier     ~ log_n, data = df_last10))
+summary(lm(log_MSE_hs_legendre    ~ log_n, data = df_last10))
+summary(lm(log_MSE_lasso_bspline  ~ log_n, data = df_last10))
+summary(lm(log_MSE_lasso_fourier  ~ log_n, data = df_last10))
+summary(lm(log_MSE_lasso_legendre ~ log_n, data = df_last10))
+
+cat("\n--- Regressions (Last 10): log(MSE) ~ log(n) + log(log(n)) ---\n")
+summary(lm(log_MSE_hs_bspline     ~ log_n + log_log_n, data = df_last10))
+summary(lm(log_MSE_hs_fourier     ~ log_n + log_log_n, data = df_last10))
+summary(lm(log_MSE_hs_legendre    ~ log_n + log_log_n, data = df_last10))
+summary(lm(log_MSE_lasso_bspline  ~ log_n + log_log_n, data = df_last10))
+summary(lm(log_MSE_lasso_fourier  ~ log_n + log_log_n, data = df_last10))
+summary(lm(log_MSE_lasso_legendre ~ log_n + log_log_n, data = df_last10))
 
