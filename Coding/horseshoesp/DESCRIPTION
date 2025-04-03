@@ -1,0 +1,11 @@
+Package: horseshoesp
+Type: Package
+Title: Horseshoe Prior for Sparse Matrices
+Version: 0.1.0
+Author: Felipe Bedoya
+Maintainer: Felipe Bedoya <fb31@rice.edu>
+Description: Efficient Horseshoe regression optimized for sparse matrices.
+License: GPL-3
+Depends: R (>= 4.0.0)
+Imports: Matrix
+RoxygenNote: 7.3.2

@@ -1,0 +1,143 @@
+library(horseshoe)
+library(ggplot2)
+library(splines)
+library(glmnet)
+library(writexl)
+library(readxl)
+
+# --------------------------
+# Global Settings
+# --------------------------
+set.seed(123)  # Fixed seed for full reproducibility
+n_values <- seq(1000, 20000, by = 1000)
+b <- 0.7
+sd <- 0.3
+
+# --------------------------
+# Basis Functions (Modularized)
+# --------------------------
+create_bspline_basis <- function(x, J) {
+  t <- c(-0.0002, -0.0001, seq(0, 1, length.out = J + 1), 1.0001, 1.0002)
+  splineDesign(t, x, ord = 3, outer.ok = TRUE, sparse = FALSE)
+}
+
+create_fourier_basis <- function(x, K) {
+  basis <- matrix(1, nrow = length(x), ncol = 2 * K + 1)
+  for (m in 1:K) {
+    basis[, 2 * m] <- sin(2 * pi * m * x)
+    basis[, 2 * m + 1] <- cos(2 * pi * m * x)
+  }
+  basis
+}
+
+create_legendre_basis <- function(x, J) {
+  x_scaled <- 2 * x - 1
+  basis <- matrix(0, nrow = length(x), ncol = J + 1)
+  basis[, 1] <- 1
+  if (J >= 1) basis[, 2] <- x_scaled
+  for (k in 3:(J + 1)) {
+    m <- k - 2
+    basis[, k] <- ((2 * m - 1) * x_scaled * basis[, k - 1] - (m - 1) * basis[, k - 2]) / m
+  }
+  basis
+}
+
+# --------------------------
+# Signal Function
+# --------------------------
+s <- function(m, x) {
+  sqrt(2) * sum(seq(m)^(-1.5) * sin(seq(m)) * cos(((seq(m)) - 0.5) * pi * x))
+}
+
+# --------------------------
+# Simulation Function
+# --------------------------
+run_simulation <- function(n_values, basis_type = "bspline", method = "horseshoe") {
+  MSE <- numeric(length(n_values))
+  
+  for (i in seq_along(n_values)) {
+    n <- n_values[i]
+    J <- floor(n^b)
+    x <- seq(0, 1, length.out = n)
+    z <- sapply(x, \(xi) s(1000, xi))
+    
+    # Basis construction
+    B <- switch(basis_type,
+                "bspline" = create_bspline_basis(x, J),
+                "fourier" = create_fourier_basis(x, floor(J/2)),
+                "legendre" = create_legendre_basis(x, J)
+    )
+    
+    y <- z + rnorm(n, sd = sd)
+    
+    # Model fitting
+    if (method == "horseshoe") {
+      fit <- horseshoe(y, B, method.tau = c("halfCauchy"), method.sigma = c("fixed"), Sigma2 = sd^2)
+      f_hat <- B %*% as.vector(unlist(fit$BetaHat))
+    } else {
+      cv_fit <- cv.glmnet(B, y, alpha = 0, nfolds = 10)
+      f_hat <- predict(cv_fit, newx = B, s = "lambda.min")
+    }
+    
+    MSE[i] <- mean((z - f_hat)^2)
+  }
+  
+  data.frame(log_n = log(n_values), log_MSE = log(MSE), basis = basis_type, method = method)
+}
+
+# --------------------------
+# Run All Simulations
+# --------------------------
+results <- list()
+
+for (basis_type in c("bspline", "fourier", "legendre")) {
+  results[[paste0("hs_", basis_type)]] <- run_simulation(n_values, basis_type, "horseshoe")
+  results[[paste0("normal_", basis_type)]] <- run_simulation(n_values, basis_type, "normal")
+}
+
+df <- do.call(rbind, results)
+
+# --------------------------
+# Regression Analysis
+# --------------------------
+analyze_results <- function(data) {
+  models <- list()
+  for (m in unique(data$method)) {
+    for (b in unique(data$basis)) {
+      subset <- data[data$method == m & data$basis == b, ]
+      models[[paste(m, b)]] <- lm(log_MSE ~ log_n, data = subset)
+    }
+  }
+  models
+}
+
+model_fits <- analyze_results(df)
+
+# --------------------------
+# Visualization
+# --------------------------
+generate_plots <- function(data) {
+  plots <- list()
+  for (m in unique(data$method)) {
+    for (b in unique(data$basis)) {
+      subset <- data[data$method == m & data$basis == b, ]
+      slope <- round(coef(lm(log_MSE ~ log_n, data = subset))[2], 3)
+      
+      plots[[paste(m, b)]] <- ggplot(subset, aes(log_n, log_MSE)) +
+        geom_point(color = "blue") +
+        geom_smooth(method = "lm", se = FALSE, color = "red") +
+        labs(title = paste("Method:", m, "| Basis:", b),
+             x = "log(n)", y = "log(MSE)") +
+        annotate("text", x = min(subset$log_n) + 1, y = min(subset$log_MSE) + 0.1,
+                 label = paste("Slope =", slope), size = 5)
+    }
+  }
+  plots
+}
+
+all_plots <- generate_plots(df)
+
+# --------------------------
+# Export Results
+# --------------------------
+write_xlsx(df, "MSE_results_optimized_v1.xlsx")

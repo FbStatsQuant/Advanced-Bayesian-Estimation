@@ -1,0 +1,50 @@
+library(readxl)
+library(splines)
+library(horseshoesp)
+
+
+
+# Set the seed for reproducibility
+set.seed(123)
+
+# Parameters
+n <- 1000  # Number of observations
+phi <- 0.7  # Autoregressive coefficient
+
+# Initialize the series
+stationary_ar1 <- numeric(n)
+stationary_ar1[1] <- rnorm(1)  # Starting value
+
+# Generate AR(1) process
+for (i in 2:n) {
+  stationary_ar1[i] <- phi * stationary_ar1[i-1] + rnorm(1)
+}
+
+# Plot the AR(1) series
+plot.ts(stationary_ar1, main="Weakly Stationary AR(1) Time Series", ylab="Value", xlab="Time")
+
+
+y <- stationary_ar1
+x <- c(1:n)
+J <- floor(n^b)
+
+
+t <- c(0.98*min(x), 0.99*min(x), seq(1,n, length.out = J-4),max(x)*1.01, max(x)*1.02)
+Sp_order <- 3
+B <- splineDesign(t, x, ord = Sp_order, outer.ok = TRUE,
+                  sparse = TRUE)
+Hs <- horseshoesp_(y, B, method.tau = c("halfCauchy"), s=0.3, 
+                method.sigma = c("Jeffreys"), burn = 1000, nmc = 5000, thin = 1, alpha = 0.05)
+
+beta_hat <- as.vector(unlist(Hs[1]))
+
+sqrt(MSE(y,as.numeric(B%*%beta_hat)))
+
+plot(x,y, xlab = "Observarions",
+     ylab = "Value", col = "lightblue", main = "AR(1)", cex.main=2)
+points(x,B%*%beta_hat, type = "l",
+       col = "red")
+legend("topleft", 
+       legend = c("Estimation", "Actual values"), 
+       col = c("red", "lightblue"), 
+       lty = c(1, 1))

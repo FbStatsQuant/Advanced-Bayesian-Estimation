@@ -1,0 +1,146 @@
+library(readxl)
+library(splines)
+library(horseshoe)
+library(MLmetrics)
+library(Hmisc)
+library(forecast)
+
+
+# Set the seed for reproducibility
+set.seed(123)
+
+# Parameters
+n <- 1000  # Number of observations
+phi <- 0.7  # Autoregressive coefficient
+
+# Initialize the series
+stationary_ar1 <- numeric(n)
+stationary_ar1[1] <- rnorm(1)  # Starting value
+
+# Generate AR(1) process
+for (i in 2:n) {
+  stationary_ar1[i] <- phi * stationary_ar1[i-1] + rnorm(1)
+}
+
+# Plot the AR(1) series
+plot.ts(stationary_ar1, main="Weakly Stationary AR(1) Time Series", ylab="Value", xlab="Time")
+
+
+y <- stationary_ar1
+x <- c(1:n)
+b <- 0.6
+J <- floor(n^b)
+
+
+t <- c(0.98*min(x), 0.99*min(x), seq(1,n, length.out = J-4),max(x)*1.01, max(x)*1.02)
+Sp_order <- 3
+B <- splineDesign(t, x, ord = Sp_order, outer.ok = TRUE,
+                  sparse = FALSE)
+Hs <- horseshoe(y, B, method.tau = c("halfCauchy"),  
+                method.sigma = c("Jeffreys"), burn = 1000, nmc = 5000, thin = 1, alpha = 0.05)
+beta_hat <- as.vector(unlist(Hs[1]))
+c(J,sum(HS.var.select(Hs, y, method = "intervals"))) #selected betas
+
+sqrt(MSE(y,B%*%beta_hat))
+
+plot(x,y, xlab = "Observarions",
+     ylab = "Value", col = "lightblue", main = "AR(1)", cex.main=2)
+points(x,B%*%beta_hat, type = "l",
+       col = "red")
+legend("topleft", 
+       legend = c("Estimation", "Actual values"), 
+       col = c("red", "lightblue"), 
+       lty = c(1, 1))
+
+
+#ARIMA
+
+data <- ts(y)
+best_model <- auto.arima(data)
+summary(best_model)
+
+fitted_values <- fitted(best_model)
+
+plot(x,y, xlab = "Observarions",
+     ylab = "Closing Value", col = "lightblue", main = "AR(1)")
+points(x,fitted_values, type = "l",
+       col = "red")
+
+
+x1 <- y[1:(n-1)]
+x2 <- y[2:n]
+m <- 900
+
+
+#Test
+
+
+t2 <- c(min(x1[1:m])*0.98, min(x1[1:m])*0.99, seq(min(x1[1:m]),max(x1[1:m]), length.out = J-4),max(x1[1:m])*1.01, 
+        max(x1[1:m])*1.02)
+Sp_order <- 3
+B2 <- splineDesign(t2, x1[1:m], ord = Sp_order, outer.ok = TRUE,
+                   sparse = FALSE)
+Hs1 <- horseshoe(x2[1:m], B2, method.tau = c("halfCauchy"),  
+                 method.sigma = c("Jeffreys"), burn = 1000, nmc = 5000, thin = 1, alpha = 0.05)
+beta_hat1 <- as.vector(unlist(Hs1[1]))
+c(J,sum(HS.var.select(Hs1,x2, method = c("intervals"), threshold = 0.05))) #selected betas
+
+sqrt(MSE(x2[1:m],B2%*%beta_hat1))
+
+
+beta_hat_t <- vector()
+B_t <- matrix()
+MSE_test <- vector()
+x2_pred <- vector()
+
+for (i in 1:50){
+  if (i ==1){
+    B_t <- splineDesign(t2, x1[1:(m+i)], ord = Sp_order, outer.ok = TRUE,
+                        sparse = FALSE)
+    Hs_t <- horseshoe(x2[1:(m+i)], B_t, method.tau = c("halfCauchy"),  
+                      method.sigma = c("Jeffreys"), burn = 1000, nmc = 5000, thin = 1, alpha = 0.05)
+    beta_hat1_t <- as.vector(unlist(Hs_t[1]))
+    x2_pred[i] <- B_t[(m+i),]%*%beta_hat1_t
+    MSE_test[i] <- MSE(x2[m+i],x2_pred[i])
+    t2 <- c(min(x1[1:(m+i)])*0.98, min(x1[1:(m+i)])*0.99, seq(min(x1[1:(m+i)]),max(x1[1:(m+i)]), length.out = J-4),max(x1[1:(m+i)])*1.01, 
+            max(x1[1:(m+i)])*1.02)
+  }
+  if (i > 1){
+    x1[(m+i)] <- x2_pred[(i-1)]
+    B_t <- splineDesign(t2, x1[1:(m+i)], ord = Sp_order, outer.ok = TRUE,
+                        sparse = FALSE)
+    Hs_t <- horseshoe(x2[1:(m+i)], B_t, method.tau = c("halfCauchy"),  
+                      method.sigma = c("Jeffreys"), burn = 1000, nmc = 5000, thin = 1, alpha = 0.05)
+    beta_hat1_t <- as.vector(unlist(Hs_t[1]))
+    x2_pred[i] <- B_t[(m+i),]%*%beta_hat1_t
+    MSE_test[i] <- MSE(x2[m+i],x2_pred[i])
+    t2 <- c(min(x1[1:(m+i)])*0.98, min(x1[1:(m+i)])*0.99, seq(min(x1[1:(m+i)]),max(x1[1:(m+i)]), length.out = J-4),max(x1[1:(m+i)])*1.01, 
+            max(x1[1:(m+i)])*1.02)
+  }
+}
+
+sqrt(mean(MSE_test))
+
+#best ARIMA
+
+forecast_value <- vector()
+MSE_arima <- vector()
+y_arima <- y
+
+
+for (i in 1:50){
+  if (i == 1){
+    data <- ts(y_arima[1:(m+i-1)])
+    best_model <- auto.arima(data)
+    forecast_value[i] <- forecast(best_model, h=1)$mean[1]
+    print(forecast_value)
+  }  
+  if (i > 1){
+    y_arima[(m+i-1)] <- forecast_value[i-1]
+    data <- ts(y_arima[1:(m+i-1)])
+    best_model <- auto.arima(data)
+    forecast_value[i] <- forecast(best_model, h=1)$mean[1]
+    print(forecast_value)
+  }
+}
+sqrt(mean(MSE_arima))

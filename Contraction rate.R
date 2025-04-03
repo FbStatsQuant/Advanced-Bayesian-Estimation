@@ -347,14 +347,6 @@ summary(lm(log_MSE_lasso_bspline  ~ log_n, data = df_mse))
 summary(lm(log_MSE_lasso_fourier  ~ log_n, data = df_mse))
 summary(lm(log_MSE_lasso_legendre ~ log_n, data = df_mse))
 
-cat("\n--- Regressions: log(MSE) ~ log(n) + log(log(n)) ---\n")
-summary(lm(log_MSE_hs_bspline     ~ log_n + log_log_n, data = df_mse))
-summary(lm(log_MSE_hs_fourier     ~ log_n + log_log_n, data = df_mse))
-summary(lm(log_MSE_hs_legendre    ~ log_n + log_log_n, data = df_mse))
-summary(lm(log_MSE_lasso_bspline  ~ log_n + log_log_n, data = df_mse))
-summary(lm(log_MSE_lasso_fourier  ~ log_n + log_log_n, data = df_mse))
-summary(lm(log_MSE_lasso_legendre ~ log_n + log_log_n, data = df_mse))
-
 
 ## Last 10
 
@@ -376,11 +368,4 @@ summary(lm(log_MSE_lasso_bspline  ~ log_n, data = df_last10))
 summary(lm(log_MSE_lasso_fourier  ~ log_n, data = df_last10))
 summary(lm(log_MSE_lasso_legendre ~ log_n, data = df_last10))
 
-cat("\n--- Regressions (Last 10): log(MSE) ~ log(n) + log(log(n)) ---\n")
-summary(lm(log_MSE_hs_bspline     ~ log_n + log_log_n, data = df_last10))
-summary(lm(log_MSE_hs_fourier     ~ log_n + log_log_n, data = df_last10))
-summary(lm(log_MSE_hs_legendre    ~ log_n + log_log_n, data = df_last10))
-summary(lm(log_MSE_lasso_bspline  ~ log_n + log_log_n, data = df_last10))
-summary(lm(log_MSE_lasso_fourier  ~ log_n + log_log_n, data = df_last10))
-summary(lm(log_MSE_lasso_legendre ~ log_n + log_log_n, data = df_last10))
 
