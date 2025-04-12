@@ -12,7 +12,7 @@ MSE_hs_l <- rep(0, length(n_values))
 MSE_no_b <- rep(0, length(n_values))
 MSE_no_f <- rep(0, length(n_values))
 MSE_no_l <- rep(0, length(n_values))
-b <- 0.7
+b <- 0.5
 sd <- 0.3
 
 s <- function(m, x) {
@@ -26,6 +26,7 @@ s <- function(m, x) {
 for (i in seq_along(n_values)) {
   n <- n_values[i]
   J <- floor(n^b)
+  tau <- n^(-(2/3))
   set.seed(n)
   x <- seq(0,1, length.out = n)
   z <- sapply(x, function(xi) s(1000, xi))
@@ -34,8 +35,8 @@ for (i in seq_along(n_values)) {
   B_s <- splineDesign(t, x, ord = Sp_order, outer.ok = TRUE, sparse = TRUE)
   y <- z + rnorm(n, mean = 0, sd = sd)
   
-  Hs <- horseshoesp(y, B_s, method.tau = c("halfCauchy"), method.sigma = c("fixed"),
-                    Sigma2 = sd^2)
+  Hs <- horseshoesp(y, B_s, method.tau = c("fixed"), method.sigma = c("fixed"),
+                    tau=tau, Sigma2 = sd^2)
   
   f_hat_hs <- as.numeric(B_s %*% as.vector(unlist(Hs$BetaHat)))
   MSE_hs_b[i] <- mean((z - f_hat_hs)^2)

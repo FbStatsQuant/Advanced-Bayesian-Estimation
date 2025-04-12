@@ -5,17 +5,13 @@ library(glmnet)
 library(writexl)
 library(readxl)
 
-# --------------------------
-# Global Settings
-# --------------------------
-set.seed(123)  # Fixed seed for full reproducibility
-n_values <- seq(1000, 20000, by = 1000)
-b <- 0.7
+
+set.seed(23434)  
+n_values <- seq(15000, 300000, by = 1000)
+b <- 0.5
 sd <- 0.3
 
-# --------------------------
-# Basis Functions (Modularized)
-# --------------------------
+
 create_bspline_basis <- function(x, J) {
   t <- c(-0.0002, -0.0001, seq(0, 1, length.out = J + 1), 1.0001, 1.0002)
   splineDesign(t, x, ord = 3, outer.ok = TRUE, sparse = FALSE)
@@ -57,6 +53,7 @@ run_simulation <- function(n_values, basis_type = "bspline", method = "horseshoe
   
   for (i in seq_along(n_values)) {
     n <- n_values[i]
+    tau <- n^(-(2/3))
     J <- floor(n^b)
     x <- seq(0, 1, length.out = n)
     z <- sapply(x, \(xi) s(1000, xi))
@@ -72,10 +69,11 @@ run_simulation <- function(n_values, basis_type = "bspline", method = "horseshoe
     
     # Model fitting
     if (method == "horseshoe") {
-      fit <- horseshoe(y, B, method.tau = c("halfCauchy"), method.sigma = c("fixed"), Sigma2 = sd^2)
+      fit <- horseshoe(y, B, method.tau = c("fixed"), method.sigma = c("fixed"), 
+                       tau = tau, Sigma2 = sd^2, burn = 1000, nmc = 4000)
       f_hat <- B %*% as.vector(unlist(fit$BetaHat))
     } else {
-      cv_fit <- cv.glmnet(B, y, alpha = 0, nfolds = 10)
+      cv_fit <- cv.glmnet(B, y, alpha = 0, nfolds = 5)
       f_hat <- predict(cv_fit, newx = B, s = "lambda.min")
     }
     
@@ -85,9 +83,6 @@ run_simulation <- function(n_values, basis_type = "bspline", method = "horseshoe
   data.frame(log_n = log(n_values), log_MSE = log(MSE), basis = basis_type, method = method)
 }
 
-# --------------------------
-# Run All Simulations
-# --------------------------
 results <- list()
 
 for (basis_type in c("bspline", "fourier", "legendre")) {
@@ -140,4 +135,4 @@ all_plots <- generate_plots(df)
 # --------------------------
 # Export Results
 # --------------------------
-write_xlsx(df, "MSE_results_optimized_v1.xlsx")
+write_xlsx(df, "MSE_results_optimized_v2.xlsx")

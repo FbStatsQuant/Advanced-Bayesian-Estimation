@@ -5,10 +5,10 @@ library(glmnet)
 
 set.seed(1991)
 
-n <- 2000
-b <- 0.6
+n <- 3000
+b <- 0.5
 J <- floor(n^b)
-tau <- n^(-b-0.5)
+tau <- n^(-2/3)
 x <- seq(0,1, length.out = n)
 
 s <- function(m, x) {
