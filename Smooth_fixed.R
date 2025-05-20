@@ -1,6 +1,6 @@
 library(horseshoe)
 library(ggplot2)
-library(splines)
+library(splines2)
 library(glmnet)
 
 set.seed(1991)
@@ -61,17 +61,17 @@ subset_indices <- seq(1, n, by = 2)
 data <- data.frame(x = x, true = z, hs = f_hat_s_hs, ridge = f_hat_s_n)[subset_indices, ]
 
 ggplot(data, aes(x = x)) +
-  geom_point(aes(y = hs, color = "Horseshoe Prior"), size = 1, alpha = 1) +  
-  geom_point(aes(y = ridge, color = "Ridge Regression"), size = 1, alpha = 1) +    
-  geom_line(aes(y = true, color = "True Function"), linewidth = 0.8) +        
+  geom_point(aes(y = hs, color = "Horseshoe Prior"), size = 1, alpha = 1) +
+  geom_point(aes(y = ridge, color = "Ridge Regression"), size = 1, alpha = 1) +
+  geom_line(aes(y = true, color = "True Function"), linewidth = 0.8) +
   labs(
     title = "True Function, Horseshoe, and Ridge Estimates (B-Splines)",
     x = "x",
     y = "Value",
     caption = "Black: True Function | Light Blue: Horseshoe Prior | Blue: Ridge Regression"
   ) +
-  scale_color_manual(values = c("True Function" = "black", 
-                                "Horseshoe Prior" = "lightblue", 
+  scale_color_manual(values = c("True Function" = "black",
+                                "Horseshoe Prior" = "lightblue",
                                 "Ridge Regression" = "blue")) +
   theme_minimal() +
   theme(
@@ -93,13 +93,13 @@ subset_indices <- seq(1, n, by = 2)
 data <- data.frame(x = x, true = z, hs = f_hat_s_hs, ridge = f_hat_s_n)[subset_indices, ]
 
 ggplot(data, aes(x = x)) +
-  geom_point(aes(y = hs, color = "Horseshoe Prior"), size = 1, alpha = 1) +  
-  geom_line(aes(y = true, color = "True Function"), linewidth = 0.8) +        
+  geom_point(aes(y = hs, color = "Horseshoe Prior"), size = 1, alpha = 1) +
+  geom_line(aes(y = true, color = "True Function"), linewidth = 0.8) +
   labs(
     x = "x",
     y = "Value"
   ) +
-  scale_color_manual(values = c("True Function" = "black", 
+  scale_color_manual(values = c("True Function" = "black",
                                 "Horseshoe Prior" = "lightblue")) +
   theme_minimal() +
   theme(
@@ -116,14 +116,14 @@ ggplot(data, aes(x = x)) +
 
 
 fourier_basis <- function(x, K) {
-  
+
   basis <- matrix(1, nrow = n, ncol = 2 * K + 1)
-  
+
   for (k in 1:K) {
     basis[, 2 * k]   <- sin(2 * pi * k * x)
     basis[, 2 * k + 1] <- cos(2 * pi * k * x)
   }
-  
+
   return(basis)
 }
 
@@ -149,17 +149,17 @@ subset_indices <- seq(1, n, by = 2)
 data <- data.frame(x = x, true = z, hs = f_hat_f_hs, ridge = f_hat_f_n)[subset_indices, ]
 
 ggplot(data, aes(x = x)) +
-  geom_point(aes(y = hs, color = "Horseshoe Prior"), size = 1, alpha = 1) +  
-  geom_point(aes(y = ridge, color = "Ridge Regression"), size = 1, alpha = 1) +    
-  geom_line(aes(y = true, color = "True Function"), linewidth = 0.8) +        
+  geom_point(aes(y = hs, color = "Horseshoe Prior"), size = 1, alpha = 1) +
+  geom_point(aes(y = ridge, color = "Ridge Regression"), size = 1, alpha = 1) +
+  geom_line(aes(y = true, color = "True Function"), linewidth = 0.8) +
   labs(
     title = "True Function, Horseshoe, and Ridge Estimates (Fourier)",
     x = "x",
     y = "Value",
     caption = "Black: True Function | Light Blue: Horseshoe Prior | Blue: Ridge Regression"
   ) +
-  scale_color_manual(values = c("True Function" = "black", 
-                                "Horseshoe Prior" = "lightblue", 
+  scale_color_manual(values = c("True Function" = "black",
+                                "Horseshoe Prior" = "lightblue",
                                 "Ridge Regression" = "blue")) +
   theme_minimal() +
   theme(
@@ -180,7 +180,7 @@ B_l <- matrix(0, nrow = length(x), ncol = J+1)
 B_l[, 1] <- 1
 if(J >= 2) B_l[, 2] <- x_scaled
 for (k in 3:(J+1)) {
-  m <- k - 2  
+  m <- k - 2
   B_l[, k] <- ((2*m - 1) * x_scaled * B_l[, k-1] - (m - 1) * B_l[, k-2]) / m
 }
 
@@ -197,23 +197,23 @@ precision_matrix <- (lambda_l/((sd^2)) * diag(ncol(B_l)) + (1/(sd^2)) * crosspro
 theta_l_n <- solve(precision_matrix, (1/(sd^2)) * crossprod(B_l, y))
 f_hat_l_n <- B_l%*%theta_l_n
 
-## Plot 
+## Plot
 
 subset_indices <- seq(1, n, by = 2)
 data <- data.frame(x = x, true = z, hs = f_hat_l_hs, ridge = f_hat_l_n)[subset_indices, ]
 
 ggplot(data, aes(x = x)) +
-  geom_point(aes(y = hs, color = "Horseshoe Prior"), size = 1, alpha = 1) +  
-  geom_point(aes(y = ridge, color = "Ridge Regression"), size = 1, alpha = 1) +    
-  geom_line(aes(y = true, color = "True Function"), linewidth = 0.8) +        
+  geom_point(aes(y = hs, color = "Horseshoe Prior"), size = 1, alpha = 1) +
+  geom_point(aes(y = ridge, color = "Ridge Regression"), size = 1, alpha = 1) +
+  geom_line(aes(y = true, color = "True Function"), linewidth = 0.8) +
   labs(
     title = "True Function, Horseshoe, and Ridge Estimates (Legendre)",
     x = "x",
     y = "Value",
     caption = "Black: True Function | Light Blue: Horseshoe Prior | Blue: Ridge Regression"
   ) +
-  scale_color_manual(values = c("True Function" = "black", 
-                                "Horseshoe Prior" = "lightblue", 
+  scale_color_manual(values = c("True Function" = "black",
+                                "Horseshoe Prior" = "lightblue",
                                 "Ridge Regression" = "blue")) +
   theme_minimal() +
   theme(
