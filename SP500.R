@@ -12,8 +12,8 @@ y <- rev(as.vector(unlist(df['Close'])))
 n <- length(y)
 x_orig <- 1:n                       # original time index
 x_scaled <- x_orig / n             # rescaled to (0,1)
-b <- 0.8
-J <- floor(n^b)
+b <- 0.5
+J <- n/2
 
 # Fourier basis using scaled x
 fourier_basis <- function(x, K) {
@@ -28,7 +28,7 @@ fourier_basis <- function(x, K) {
 B_f <- fourier_basis(x_scaled, floor(J / 2))
 
 # Horseshoe estimation
-Hs_f <- horseshoe(y, B_f, method.tau = "halfCauchy", method.sigma = "Jeffreys")
+Hs_f <- horseshoe(y, B_f, method.tau = "fixed", method.sigma = "Jeffreys", tau = 1/J)
 theta_f_hs <- unlist(Hs_f$BetaHat)
 f_hat_f_hs <- B_f %*% theta_f_hs
 

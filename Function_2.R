@@ -14,7 +14,7 @@ x <- seq(0,1, length.out = n)
 
 f <- function(x) 1.5*(abs(x-0.1))^3 - 5*(abs(x-0.4))^3
 z <- f(x)
-sd <- 0.04
+sd <- 0.07
 y <- z + rnorm(n, mean = 0, sd = sd)
 
 sum(z^2) / sum((z-y)^2)

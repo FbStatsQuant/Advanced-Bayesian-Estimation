@@ -7,7 +7,7 @@ set.seed(2024)
 # Settings
 f <- function(x) 1.5*(abs(x-0.1))^3 - 5*(abs(x-0.4))^3
 sigma <- 0.08
-b <- 0.6
+b <- 0.5
 Sp_order <- 3
 n_seq <- seq(1000, 10000, by = 1000)
 
