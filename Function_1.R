@@ -1,3 +1,5 @@
+#install.packages(c("horseshoe", "ggplot2", "splines", "glmnet"))
+
 library(horseshoe)
 library(ggplot2)
 library(splines)
@@ -6,8 +8,8 @@ library(glmnet)
 set.seed(1991)
 
 
-n <- 1000
-b <- 0.6
+n <- 2000
+b <- 0.7
 J <- floor(n^b)
 x <- seq(0,1, length.out = n)
 
@@ -30,17 +32,17 @@ ggplot(data, aes(x=x)) +
   ) +
   theme_minimal()
 
-t <- seq(0.0001,0.9999, length.out = J)
 Sp_order <- 3
-B_s <- bSpline(x, knots = t, degree = Sp_order, intercept = FALSE)
+num_knots_s <- max(5, floor(J/5))
+B_s <- bs(x, df = num_knots_s, degree = Sp_order, intercept = FALSE)
 
 #Hs
 
 Hs_s <- horseshoe(y, B_s, method.tau = c("halfCauchy"), method.sigma = c("fixed"),
-                  Sigma2 = sd^2)
+                  Sigma2 = sd^2, nmc = 5000, burn = 1000)
 
-theta_s_hs <- unlist(Hs_s$BetaHat)
-f_hat_s_hs <- B_s%*%theta_s_hs
+theta_s_hs <- drop(Hs_s$BetaHat)
+f_hat_s_hs <- drop(B_s%*%theta_s_hs)
 
 #Ridge
 
@@ -64,7 +66,8 @@ ggplot(data, aes(x = x)) +
     y = "Value",
   ) +
   scale_color_manual(values = c("Horseshoe Prior" = "blue",
-                                "Ridge Regression" = "lightblue")) +
+                                "Ridge Regression" = "lightblue",
+                                "True Function" = "black")) +
   theme_minimal() +
   theme(
     legend.position = c(1, 0.11),
@@ -74,30 +77,28 @@ ggplot(data, aes(x = x)) +
     #plot.caption = element_text(hjust = 0.1, vjust = 1, size = 10, face = "italic")  # Centered caption below the plot
   )
 
-# Fourier
-
-
+# Fourier (cosine-only basis: better for symmetric functions like |x - 0.5|)
 
 fourier_basis <- function(x, K) {
 
-  basis <- matrix(1, nrow = n, ncol = 2 * K + 1)
+  basis <- matrix(1, nrow = length(x), ncol = K + 1)
 
   for (k in 1:K) {
-    basis[, 2 * k]   <- sin(2 * pi * k * x)
-    basis[, 2 * k + 1] <- cos(2 * pi * k * x)
+    basis[, k + 1] <- cos(pi * k * x)
   }
 
   return(basis)
 }
 
-B_f <- fourier_basis(x, floor(J/2))
+num_fourier <- max(5, floor(J/5))
+B_f <- fourier_basis(x, num_fourier)
 
 ## Hs
 
 Hs_f <- horseshoe(y, B_f, method.tau = c("halfCauchy"), method.sigma = c("fixed"),
-                  Sigma2 = sd^2)
-theta_f_hs <- unlist(Hs_f$BetaHat)
-f_hat_f_hs <- B_f%*%theta_f_hs
+                  Sigma2 = sd^2, nmc = 10000, burn = 2000)
+theta_f_hs <- drop(Hs_f$BetaHat)
+f_hat_f_hs <- drop(B_f%*%theta_f_hs)
 
 ## Ridge
 
@@ -121,7 +122,8 @@ ggplot(data, aes(x = x)) +
     y = "Value",
   ) +
   scale_color_manual(values = c("Horseshoe Prior" = "blue",
-                                "Ridge Regression" = "lightblue")) +
+                                "Ridge Regression" = "lightblue",
+                                "True Function" = "black")) +
   theme_minimal() +
   theme(
     legend.position = c(1, 0.11),
