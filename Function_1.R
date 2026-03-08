@@ -8,8 +8,8 @@ library(glmnet)
 set.seed(1991)
 
 
-n <- 2000
-b <- 0.7
+n <- 3000
+b <- 0.8
 J <- floor(n^b)
 x <- seq(0,1, length.out = n)
 
@@ -105,8 +105,8 @@ B_f <- fourier_basis(x, num_fourier)
 
 ## Hs
 
-Hs_f <- horseshoe(y, B_f, method.tau = c("fixed"), tau = 1/J, method.sigma = c("fixed"),
-                  Sigma2 = sd^2, nmc = 10000, burn = 2000)
+Hs_f <- horseshoe(y, B_f, method.tau = c("fixed"), tau = 1/(J), method.sigma = c("fixed"),
+                  Sigma2 = sd^2, nmc = 20000, burn = 4000)
 theta_f_hs <- drop(Hs_f$BetaHat)
 f_hat_f_hs <- drop(B_f%*%theta_f_hs)
 
@@ -150,3 +150,41 @@ ggplot(data, aes(x = x)) +
 (mse_s_ridge <- mean((z - f_hat_s_n)^2))
 (mse_f_hs <- mean((z - f_hat_f_hs)^2))
 (mse_f_ridge <- mean((z - f_hat_f_n)^2))
+
+# Histogram of absolute horseshoe coefficients
+
+abs_coef_f <- data.frame(abs_coef = abs(theta_f_hs),
+                         index    = seq_along(theta_f_hs))
+
+ggplot(abs_coef_f, aes(x = abs_coef)) +
+  geom_histogram(bins = 100, fill = "steelblue", color = "white") +
+  labs(
+    title = "Histogram of |Horseshoe Coefficients| (Fourier, fixed tau)",
+    x = "|Coefficient|",
+    y = "Count"
+  ) +
+  theme_minimal()
+
+abs_coef_s_hs <- data.frame(abs_coef = abs(theta_s_hs),
+                             index    = seq_along(theta_s_hs))
+
+ggplot(abs_coef_s_hs, aes(x = abs_coef)) +
+  geom_histogram(bins = 100, fill = "steelblue", color = "white") +
+  labs(
+    title = "Histogram of |Horseshoe Coefficients| (B-Splines, halfCauchy tau)",
+    x = "|Coefficient|",
+    y = "Count"
+  ) +
+  theme_minimal()
+
+abs_coef_s_fixed <- data.frame(abs_coef = abs(theta_s_hs_fixed),
+                                index    = seq_along(theta_s_hs_fixed))
+
+ggplot(abs_coef_s_fixed, aes(x = abs_coef)) +
+  geom_histogram(bins = 100, fill = "darkgreen", color = "white") +
+  labs(
+    title = "Histogram of |Horseshoe Coefficients| (B-Splines, fixed tau)",
+    x = "|Coefficient|",
+    y = "Count"
+  ) +
+  theme_minimal()
