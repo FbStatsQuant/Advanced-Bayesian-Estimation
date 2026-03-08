@@ -7,14 +7,14 @@ library(splines2)
 set.seed(1991)
 
 
-n <- 1000
+n <- 5000
 b <- 0.6
 J <- floor(n^b)
 x <- seq(0,1, length.out = n)
 
 f <- function(x) 0.5*(abs(x-0.2))^5 + 2*(abs(x-0.5))^5 -0.5*(abs(x-0.9))^5
 z <- f(x)
-sd <- 0.05
+sd <- 0.1
 y <- z + rnorm(n, mean = 0, sd = sd)
 
 sum(z^2) / sum((z-y)^2)
@@ -99,12 +99,11 @@ fourier_basis <- function(x, K) {
   return(basis)
 }
 
-num_fourier <- max(5, floor(J/5))
 B_f <- fourier_basis(x, num_fourier)
 
 ## Hs (fixed tau = 1/J)
 
-Hs_f <- horseshoe(y, B_f, method.tau = c("fixed"), tau = 1/J, method.sigma = c("fixed"),
+Hs_f <- horseshoe(y, B_f, method.tau = c("fixed"), tau = 1/(10*J*sqrt(n)), method.sigma = c("fixed"),
                   Sigma2 = sd^2, nmc = 20000, burn = 4000)
 theta_f_hs <- drop(Hs_f$BetaHat)
 f_hat_f_hs <- drop(B_f%*%theta_f_hs)
