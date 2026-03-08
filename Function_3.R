@@ -7,8 +7,8 @@ library(splines2)
 set.seed(1991)
 
 
-n <- 5000
-b <- 0.6
+n <- 2000
+b <- 0.8
 J <- floor(n^b)
 x <- seq(0,1, length.out = n)
 
@@ -31,9 +31,9 @@ ggplot(data, aes(x=x)) +
   ) +
   theme_minimal()
 
-t <- seq(0.0001, 0.9999, length.out = J)
 Sp_order <- 3
-B_s <- bSpline(x, knots = t, degree = Sp_order, intercept = FALSE)
+num_knots_s <- max(5, floor(J/5))
+B_s <- bs(x, df = num_knots_s, degree = Sp_order, intercept = FALSE)
 
 #Hs (halfCauchy tau)
 
@@ -103,16 +103,16 @@ B_f <- fourier_basis(x, num_fourier)
 
 ## Hs (fixed tau = 1/J)
 
-Hs_f <- horseshoe(y, B_f, method.tau = c("fixed"), tau = 1/(J), method.sigma = c("fixed"),
-                  Sigma2 = sd^2, nmc = 20000, burn = 4000, thin = 10)
-theta_f_hs <- drop(Hs_f$BetaHat)
+Hs_f <- horseshoe(y, B_f, method.tau = c("fixed"), tau = 1/(J*(sqrt(n))), method.sigma = c("fixed"),
+                  Sigma2 = sd^2, nmc = 5000, burn = 1000, thin = 10)
+theta_f_hs <- drop(Hs_f$BetaMedian)
 f_hat_f_hs <- drop(B_f%*%theta_f_hs)
 
 ## Hs (halfCauchy tau)
 
 Hs_f_hc <- horseshoe(y, B_f, method.tau = c("halfCauchy"), method.sigma = c("fixed"),
-                     Sigma2 = sd^2, nmc = 20000, burn = 4000)
-theta_f_hs_hc <- drop(Hs_f_hc$BetaHat)
+                     Sigma2 = sd^2, nmc = 5000, burn = 1000)
+theta_f_hs_hc <- drop(Hs_f_hc$BetaMedian)
 f_hat_f_hs_hc <- drop(B_f%*%theta_f_hs_hc)
 
 ## Ridge
@@ -124,7 +124,7 @@ f_hat_f_n <- B_f%*%theta_f_n
 
 ## Plot
 
-subset_indices <- seq(1, n, by = 2)
+subset_indices <- seq(100, n-100, by = 2)
 data <- data.frame(x = x, true = z, hs = f_hat_f_hs, hs_hc = f_hat_f_hs_hc, ridge = f_hat_f_n)[subset_indices, ]
 
 ggplot(data, aes(x = x)) +
