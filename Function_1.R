@@ -36,13 +36,21 @@ Sp_order <- 3
 num_knots_s <- max(5, floor(J/5))
 B_s <- bs(x, df = num_knots_s, degree = Sp_order, intercept = FALSE)
 
-#Hs
+#Hs (halfCauchy tau)
 
 Hs_s <- horseshoe(y, B_s, method.tau = c("halfCauchy"), method.sigma = c("fixed"),
                   Sigma2 = sd^2, nmc = 5000, burn = 1000)
 
 theta_s_hs <- drop(Hs_s$BetaHat)
 f_hat_s_hs <- drop(B_s%*%theta_s_hs)
+
+#Hs (fixed tau = 1/J)
+
+Hs_s_fixed <- horseshoe(y, B_s, method.tau = c("fixed"), tau = 1/J, method.sigma = c("fixed"),
+                        Sigma2 = sd^2, nmc = 5000, burn = 1000)
+
+theta_s_hs_fixed <- drop(Hs_s_fixed$BetaHat)
+f_hat_s_hs_fixed <- drop(B_s%*%theta_s_hs_fixed)
 
 #Ridge
 
@@ -54,10 +62,11 @@ f_hat_s_n <- B_s%*%theta_s_n
 ## Plot
 
 subset_indices <- seq(1, n, by = 2)
-data <- data.frame(x = x, true = z, hs = f_hat_s_hs, ridge = f_hat_s_n)[subset_indices, ]
+data <- data.frame(x = x, true = z, hs = f_hat_s_hs, hs_fixed = f_hat_s_hs_fixed, ridge = f_hat_s_n)[subset_indices, ]
 
 ggplot(data, aes(x = x)) +
-  geom_point(aes(y = hs, color = "Horseshoe Prior"), size = 1, alpha = 1) +
+  geom_point(aes(y = hs, color = "Horseshoe (halfCauchy)"), size = 1, alpha = 1) +
+  geom_point(aes(y = hs_fixed, color = "Horseshoe (fixed tau)"), size = 1, alpha = 1) +
   geom_point(aes(y = ridge, color = "Ridge Regression"), size = 1, alpha = 1) +
   geom_line(aes(y = true, color = "True Function"), linewidth = 0.8) +
   labs(
@@ -65,7 +74,8 @@ ggplot(data, aes(x = x)) +
     x = "x",
     y = "Value",
   ) +
-  scale_color_manual(values = c("Horseshoe Prior" = "blue",
+  scale_color_manual(values = c("Horseshoe (halfCauchy)" = "blue",
+                                "Horseshoe (fixed tau)" = "darkgreen",
                                 "Ridge Regression" = "lightblue",
                                 "True Function" = "black")) +
   theme_minimal() +
@@ -95,7 +105,7 @@ B_f <- fourier_basis(x, num_fourier)
 
 ## Hs
 
-Hs_f <- horseshoe(y, B_f, method.tau = c("halfCauchy"), method.sigma = c("fixed"),
+Hs_f <- horseshoe(y, B_f, method.tau = c("fixed"), tau = 1/J, method.sigma = c("fixed"),
                   Sigma2 = sd^2, nmc = 10000, burn = 2000)
 theta_f_hs <- drop(Hs_f$BetaHat)
 f_hat_f_hs <- drop(B_f%*%theta_f_hs)
@@ -136,6 +146,7 @@ ggplot(data, aes(x = x)) +
 
 
 (mse_s_hs <- mean((z - f_hat_s_hs)^2))
+(mse_s_hs_fixed <- mean((z - f_hat_s_hs_fixed)^2))
 (mse_s_ridge <- mean((z - f_hat_s_n)^2))
 (mse_f_hs <- mean((z - f_hat_f_hs)^2))
 (mse_f_ridge <- mean((z - f_hat_f_n)^2))
