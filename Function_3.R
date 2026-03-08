@@ -99,12 +99,12 @@ fourier_basis <- function(x, K) {
   return(basis)
 }
 
-B_f <- fourier_basis(x, num_fourier)
+B_f <- fourier_basis(x, J)
 
 ## Hs (fixed tau = 1/J)
 
 Hs_f <- horseshoe(y, B_f, method.tau = c("fixed"), tau = 1/(J*(sqrt(n))), method.sigma = c("fixed"),
-                  Sigma2 = sd^2, nmc = 5000, burn = 1000, thin = 10)
+                  Sigma2 = sd^2, nmc = 5000, burn = 1000, thin = 1)
 theta_f_hs <- drop(Hs_f$BetaMedian)
 f_hat_f_hs <- drop(B_f%*%theta_f_hs)
 

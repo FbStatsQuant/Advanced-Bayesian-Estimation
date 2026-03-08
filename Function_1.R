@@ -101,7 +101,7 @@ fourier_basis <- function(x, K) {
 }
 
 num_fourier <- max(5, floor(J/5))
-B_f <- fourier_basis(x, num_fourier)
+B_f <- fourier_basis(x, J)
 
 ## Hs (fixed tau = 1/J)
 
