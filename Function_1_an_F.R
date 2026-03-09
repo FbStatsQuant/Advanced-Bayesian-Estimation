@@ -28,10 +28,10 @@ for (i in seq_along(n_seq)) {
   Hs  <- horseshoe(y, B,
                    method.tau   = "fixed", tau = 1 / J,
                    method.sigma = "fixed", Sigma2 = sd^2,
-                   nmc = 6000, burn = 1000)
+                   nmc = 4000, burn = 1000)
 
   theta      <- apply(Hs$BetaSamples, 1, median)
-  a_n[i]     <- sum(abs(theta) > 1 / J)
+  a_n[i]     <- sum(abs(theta) > 1 / (J*n^(0.2)))
 
   cat(sprintf("n = %5d | J = %4d | nonzeros = %d\n", n, J, a_n[i]))
 }
