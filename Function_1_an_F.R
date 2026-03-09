@@ -26,7 +26,7 @@ for (i in seq_along(n_seq)) {
   B   <- fourier_basis(x, J)
 
   Hs  <- horseshoe(y, B,
-                   method.tau   = "fixed", tau = 1 / J,
+                   method.tau   = "fixed", tau = 1 / sqrt(J),
                    method.sigma = "fixed", Sigma2 = sd^2,
                    nmc = 4000, burn = 1000)
 
